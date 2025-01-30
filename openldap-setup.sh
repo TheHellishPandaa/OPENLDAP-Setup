@@ -8,7 +8,6 @@ read -s LDAP_PASSWORD
 
 echo "Introduce la ruta del directorio base para los usuarios (ejemplo: /home):"
 read HOME_BASE
-
 echo "Introduce el shell por defecto para los usuarios (ejemplo: /bin/bash):"
 read DEFAULT_SHELL
 
@@ -28,7 +27,6 @@ fi
 # Archivo temporal para las entradas LDIF
 LDIF_FILE="ou_structure.ldif"
 
-# Generar el contenido del archivo LDIF
 echo "" > $LDIF_FILE
 
 add_ou() {
@@ -47,12 +45,21 @@ add_group() {
 }
 
 add_user() {
-    echo "Introduce el nombre de usuario para $1 en $2:"
+    echo "Introduce el nombre de usuario:"
     read USERNAME
     echo "Introduce la contraseña para $USERNAME:"
     read -s PASSWORD
     
-    USER_DN="cn=$USERNAME,ou=$2,$BASE_DN"
+    echo "Selecciona la OU donde guardar al usuario:"
+    select OU in OU_EQUIPODIRECTIVO OU_PROFESORES OU_ADMINISTRACION OU_SECRETARIO OU_DPTOTECNICO OU_ESO OU_FP; do
+        if [ -n "$OU" ]; then
+            break
+        else
+            echo "Selección no válida. Inténtalo de nuevo."
+        fi
+    done
+    
+    USER_DN="cn=$USERNAME,ou=$OU,$BASE_DN"
     echo "dn: $USER_DN" >> $LDIF_FILE
     echo "objectClass: inetOrgPerson" >> $LDIF_FILE
     echo "objectClass: posixAccount" >> $LDIF_FILE
@@ -68,66 +75,21 @@ add_user() {
     echo "" >> $LDIF_FILE
 }
 
-# Crear las Unidades Organizativas principales
-add_ou "OU_EQUIPODIRECTIVO" "$BASE_DN"
-add_ou "OU_PROFESORES" "$BASE_DN"
-add_ou "OU_ADMINISTRACION" "$BASE_DN"
-add_ou "OU_SECRETARIO" "$BASE_DN"
-add_ou "OU_DPTOTECNICO" "$BASE_DN"
-add_ou "OU_ESO" "$BASE_DN"
-add_ou "OU_FP" "$BASE_DN"
+# Crear la estructura de OUs
+for OU in OU_EQUIPODIRECTIVO OU_PROFESORES OU_ADMINISTRACION OU_SECRETARIO OU_DPTOTECNICO OU_ESO OU_FP; do
+    add_ou "$OU" "$BASE_DN"
+done
 
 # Crear los grupos en OU_EQUIPODIRECTIVO
 add_group "GP_JefeEstudiosAdjunto" "OU_EQUIPODIRECTIVO"
 
-# Sub OU dentro de Profesores
-for dept in DPTOINFORMATICA DPTOINGLES DPTOLENGUA DPTOMATEMATICAS DPTOFOL DPTOCIENCIAS DPTOGEOGRAFIA DPTOTECNOLOGIA; do
-    add_ou "OU_$dept" "ou=OU_PROFESORES,$BASE_DN"
+# Crear usuarios
+echo "¿Cuántos usuarios deseas crear?"
+read USER_COUNT
+
+for (( i=1; i<=USER_COUNT; i++ )); do
+    add_user
 done
-
-# Sub OU dentro de DPTOINFORMATICA
-add_ou "OU_INFORMATICA" "ou=OU_DPTOINFORMATICA,ou=OU_PROFESORES,$BASE_DN"
-add_ou "OU_SISTEMAS" "ou=OU_DPTOINFORMATICA,ou=OU_PROFESORES,$BASE_DN"
-
-# Sub OU dentro de DPTOCIENCIAS
-add_ou "OU_CIENCIASFISICAS" "ou=OU_DPTOCIENCIAS,ou=OU_PROFESORES,$BASE_DN"
-add_ou "OU_BIOLOGIA" "ou=OU_DPTOCIENCIAS,ou=OU_PROFESORES,$BASE_DN"
-
-# Sub OU dentro de ESO
-for curso in PRIMEROESO SEGUNDOESO TERCEROESO PRIMEROBCH SEGUNDOBCH; do
-    add_ou "OU_$curso" "ou=OU_ESO,$BASE_DN"
-    for i in {1..3}; do
-        add_user "Alumno $i" "OU_$curso"
-    done
-done
-
-# Sub OU dentro de FP
-for ciclo in DAW DAM SMR ASIR POC PED AF; do
-    add_ou "OU_$ciclo" "ou=OU_FP,$BASE_DN"
-    for i in {1..3}; do
-        add_user "Alumno $i" "OU_$ciclo"
-    done
-done
-
-# Usuarios en departamentos
-for dept in DPTOINFORMATICA DPTOINGLES DPTOLENGUA DPTOMATEMATICAS DPTOFOL DPTOCIENCIAS DPTOGEOGRAFIA DPTOTECNOLOGIA; do
-    for i in {1..3}; do
-        add_user "Profesor $i" "OU_$dept"
-    done
-done
-
-# Usuarios en administración
-for i in {1..2}; do
-    add_user "Admin $i" "OU_ADMINISTRACION"
-done
-
-# Usuarios en equipo directivo
-for i in {1..4}; do
-    add_user "Directivo $i" "OU_EQUIPODIRECTIVO"
-done
-
-# Usuario en departamento técnico
-add_user "tecAdmin" "OU_DPTOTECNICO"
 
 # Aplicar la configuración
 ldapadd -x -H $LDAP_SERVER -D "$BIND_DN" -w "$LDAP_PASSWORD" -f $LDIF_FILE
