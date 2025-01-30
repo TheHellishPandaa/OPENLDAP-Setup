@@ -21,7 +21,7 @@ Cuentas de usuario con credenciales definidas por el usuario.
 Aplica los cambios en el servidor LDAP y permite el inicio de sesión de los usuarios en el dominio.
 
 Requisitos
-
+````
 Un servidor LDAP funcionando (por ejemplo, OpenLDAP).
 
 Acceso administrativo al servidor LDAP.
@@ -29,35 +29,35 @@ Acceso administrativo al servidor LDAP.
 Paquete ldap-utils instalado en el sistema.
 
 OpenSSL para el cifrado de contraseñas.
-
+````
 Instalación
 
 Clonar este repositorio:
-
-git clone https://github.com/tuusuario/tu-repositorio.git
-cd tu-repositorio
-
+````
+git clone https://github.com/TheHellishPandaa/OPENLDAP-Setup.git
+cd openldap-setup
+````
 Asegurar permisos de ejecución:
-
-chmod +x crear_ou_ldap.sh
-
+````
+chmod +x openldap-setup.sh
+````
 Uso
 
 Ejecutar el script:
-
-./crear_ou_ldap.sh
-
+````
+./openldap-setup.sh
+````
 Ingresar la información solicitada:
 
-Dominio LDAP
+   - Dominio LDAP
 
-Contraseña del administrador LDAP
+   - Contraseña del administrador LDAP
 
-Directorio base de usuarios
+   - Directorio base de usuarios
 
-Shell por defecto
+   - Shell por defecto
 
-Confirmar la creación de la estructura LDAP.
+   - Confirmar la creación de la estructura LDAP.
 
 Ingresar los nombres y contraseñas de los usuarios cuando sea solicitado.
 
@@ -66,7 +66,7 @@ El script generará y aplicará la configuración en LDAP.
 Estructura de LDAP Creada
 
 El script genera la siguiente estructura de Unidades Organizativas:
-
+```sh
 OU_EQUIPODIRECTIVO
     ├── GP_JefeEstudiosAdjunto (Grupo)
 OU_PROFESORES
@@ -99,7 +99,7 @@ OU_FP
     ├── OU_POC
     ├── OU_PED
     ├── OU_AF
-
+````
 Contribuciones
 
 Las contribuciones son bienvenidas. Puedes abrir un issue o hacer un pull request con mejoras o correcciones.
