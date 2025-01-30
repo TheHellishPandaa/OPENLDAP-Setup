@@ -1,0 +1,97 @@
+#!/bin/bash
+
+# Archivo de texto con la estructura LDAP
+txt_file="estructura_ldap.txt"
+ldif_file="estructura_ldap.ldif"
+
+echo "Creando archivo de estructura LDAP..."
+cat > $txt_file <<EOL
+dc=example,dc=com
+  OU=EQUIPODIRECTIVO
+    GP=JefeEstudiosAdjunto
+  OU=PROFESORES
+    OU=DPTOINFORMATICA
+      OU=INFORMATICA
+      OU=SISTEMAS
+    OU=DPTOINGLES
+    OU=DPTOLENGUA
+    OU=DPTOMATEMATICAS
+    OU=DPTOFOL
+    OU=DPTOCIENCIAS
+      OU=CIENCIASFISICAS
+      OU=BIOLOGIA
+    OU=DPTOGEOGRAFIA
+    OU=DPTOTECNOLOGIA
+  OU=ADMINISTRACION
+  OU=SECRETARIO
+  OU=DPTOTÉCNICO
+  OU=ESO
+    OU=PRIMEROESO
+    OU=SEGUNDOESO
+    OU=TERCEROESO
+    OU=PRIMEROBCH
+    OU=SEGUNDOBCH
+  OU=FP
+    OU=DAW
+    OU=DAM
+    OU=SMR
+    OU=ASIR
+    OU=POC
+    OU=PED
+    OU=AF
+EOL
+
+echo "Convirtiendo a formato LDIF..."
+echo "dn: dc=example,dc=com" > $ldif_file
+echo "objectClass: top" >> $ldif_file
+echo "objectClass: dcObject" >> $ldif_file
+echo "objectClass: organization" >> $ldif_file
+echo "o: Example Corp" >> $ldif_file
+echo "" >> $ldif_file
+
+while read -r line; do
+  indent_count=$(echo "$line" | sed 's/[^ ]//g' | wc -c)
+  clean_line=$(echo "$line" | sed 's/^ *//')
+  if [[ $clean_line == OU=* ]]; then
+    ou_name=${clean_line#OU=}
+    parent_dn="dc=example,dc=com"
+    if (( indent_count > 2 )); then
+      parent_ou=$(echo "$line" | sed -E 's/^ +//; s/ .*//')
+      parent_dn="ou=$parent_ou,$parent_dn"
+    fi
+    echo "dn: ou=$ou_name,$parent_dn" >> $ldif_file
+    echo "objectClass: organizationalUnit" >> $ldif_file
+    echo "ou: $ou_name" >> $ldif_file
+    echo "" >> $ldif_file
+  fi
+done < $txt_file
+
+echo "Importando estructura en LDAP..."
+ldapadd -x -D "cn=admin,dc=example,dc=com" -W -f $ldif_file
+
+echo "Creando cuentas de usuario..."
+# Generar usuarios para cada curso
+declare -A user_counts
+user_counts=( [OU_PRIMEROESO]=3 [OU_SEGUNDOESO]=3 [OU_TERCEROESO]=3 [OU_PRIMEROBCH]=3 [OU_SEGUNDOBCH]=3 
+              [OU_DAW]=3 [OU_DAM]=3 [OU_SMR]=3 [OU_ASIR]=3 [OU_POC]=3 [OU_PED]=3 [OU_AF]=3 
+              [OU_DPTOINFORMATICA]=3 [OU_DPTOINGLES]=3 [OU_DPTOLENGUA]=3 [OU_DPTOMATEMATICAS]=3 
+              [OU_DPTOFOL]=3 [OU_DPTOCIENCIAS]=3 [OU_DPTOGEOGRAFIA]=3 [OU_DPTOTECNOLOGIA]=3 
+              [OU_ADMINISTRACION]=2 [OU_EQUIPODIRECTIVO]=4 [OU_DPTOTÉCNICO]=1 )
+
+for ou in "${!user_counts[@]}"; do
+  for ((i=1; i<=user_counts[$ou]; i++)); do
+    user="usuario${i}"
+    dn="cn=$user,ou=${ou},dc=example,dc=com"
+    echo "dn: $dn" >> usuarios.ldif
+    echo "objectClass: inetOrgPerson" >> usuarios.ldif
+    echo "cn: $user" >> usuarios.ldif
+    echo "sn: $user" >> usuarios.ldif
+    echo "uid: $user" >> usuarios.ldif
+    echo "userPassword: $(slappasswd -s password123)" >> usuarios.ldif
+    echo "" >> usuarios.ldif
+  done
+done
+
+ldapadd -x -D "cn=admin,dc=example,dc=com" -W -f usuarios.ldif
+
+echo "Configuración completada."
