@@ -3,23 +3,29 @@
 # Solicitar dominio de LDAP
 echo "Ingrese el dominio de su LDAP (ejemplo: example.com):"
 read domain
+
+# Convertimos el dominio en formato Base DN (Distinguished Name)
+# Por ejemplo, si el usuario ingresa "example.com", se convierte en "dc=example,dc=com"
 base_dn="dc=$(echo $domain | sed 's/\./,dc=/g')"
 
 echo "Base DN generado: $base_dn"
 
 # Archivo de texto con la estructura LDAP pasado como argumento
 if [ -z "$1" ]; then
-  echo "Uso: $0 <archivo_txt_estructura_ldap>"
+  echo "Uso: $0 <archivo_estructura_ldap.txt>"
   exit 1
 fi
 
+# Guardamos el nombre del archivo de entrada y el de salida
 txt_file="$1"
 ldif_file="estructura_ldap.ldif"
 
+# Verificar si el usuario pasó un archivo de estructura LDAP como argumento
 if [ ! -f "$txt_file" ]; then
   echo "Error: El archivo $txt_file no existe."
   exit 1
 fi
+
 
 echo "Convirtiendo a formato LDIF..."
 echo "dn: $base_dn" > $ldif_file
@@ -62,7 +68,9 @@ ldapadd -x -D "cn=admin,$base_dn" -W -f $ldif_file
 echo "-------------------------------------------------------"
 echo "--------------------------------------"
 
-echo "Estructura LDAP creada exitosamente en el dominio $domain."
+echo "Archivo de texto, convertido a formato ldif. se guardo en el mismo directorio de trabajo como $ldif_file"
+echo "Ahora, utilize ldapadd -x -D cn=admin,dc=example,dc=com -W -f $ldif_file, para importar el archivo LDAP al servidor"
+
 
 echo "--------------------------------------"
 echo "-------------------------------------------------------"
