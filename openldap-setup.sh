@@ -5,10 +5,21 @@ echo "Ingrese el dominio de su LDAP (ejemplo: example.com):"
 read domain
 base_dn="dc=$(echo $domain | sed 's/\./,dc=/g')"
 
-# Archivo de texto con la estructura LDAP
-txt_file="estructura_ldap.txt"
+echo "Base DN generado: $base_dn"
+
+# Archivo de texto con la estructura LDAP pasado como argumento
+if [ -z "$1" ]; then
+  echo "Uso: $0 <archivo_txt_estructura_ldap>"
+  exit 1
+fi
+
+txt_file="$1"
 ldif_file="estructura_ldap.ldif"
 
+if [ ! -f "$txt_file" ]; then
+  echo "Error: El archivo $txt_file no existe."
+  exit 1
+fi
 
 echo "Convirtiendo a formato LDIF..."
 echo "dn: $base_dn" > $ldif_file
@@ -18,24 +29,45 @@ echo "objectClass: organization" >> $ldif_file
 echo "o: Example Corp" >> $ldif_file
 echo "" >> $ldif_file
 
+declare -A parent_map
+parent_map[0]="$base_dn"
+
 while read -r line; do
+  [[ -z "$line" || "$line" =~ ^# ]] && continue  # Omitir líneas vacías y comentarios
   indent_count=$(echo "$line" | sed 's/[^ ]//g' | wc -c)
   clean_line=$(echo "$line" | sed 's/^ *//')
   if [[ $clean_line == OU=* ]]; then
     ou_name=${clean_line#OU=}
-    parent_dn="$base_dn"
-    if (( indent_count > 2 )); then
-      parent_ou=$(echo "$line" | sed -E 's/^ +//; s/ .*//')
-      parent_dn="ou=$parent_ou,$parent_dn"
+    ou_name=$(echo "$ou_name" | tr -d ' ')  # Eliminar espacios en blanco extra
+    level=$((indent_count / 2))  # Determinar el nivel de indentación
+    parent_dn="${parent_map[$((level-1))]}"
+    if [ -z "$parent_dn" ]; then
+      parent_dn="$base_dn"
     fi
-    echo "dn: ou=$ou_name,$parent_dn" >> $ldif_file
+    full_dn="ou=$ou_name,$parent_dn"
+    echo "dn: $full_dn" >> $ldif_file
     echo "objectClass: organizationalUnit" >> $ldif_file
     echo "ou: $ou_name" >> $ldif_file
     echo "" >> $ldif_file
+    parent_map[$level]="$full_dn"
   fi
-done < $txt_file
+done < "$txt_file"
+
+echo "Verificando archivo LDIF generado..."
+cat $ldif_file
 
 echo "Importando estructura en LDAP..."
 ldapadd -x -D "cn=admin,$base_dn" -W -f $ldif_file
 
-echo "Estructura LDAP creada exitosamente."
+echo "-------------------------------------------------------"
+echo "--------------------------------------"
+
+echo "Estructura LDAP creada exitosamente en el dominio $domain."
+
+echo "--------------------------------------"
+echo "-------------------------------------------------------"
+
+
+
+
+
