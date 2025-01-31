@@ -69,8 +69,8 @@ echo "-------------------------------------------------------"
 echo "--------------------------------------"
 
 echo "Archivo de texto, convertido a formato ldif. se guardo en el mismo directorio de trabajo como $ldif_file"
-echo "Ahora, utilize ldapadd -x -D cn=admin,dc=example,dc=com -W -f $ldif_file, para importar el archivo LDAP al servidor"
-
+echo "Ahora, utilize ldapadd -x -D cn=admin,dc=tudominio,dc=com -W -f $ldif_file, para importar el archivo LDAP al servidor"
+echo "introduzca cn=admin,dc=tudominio,dc=com entre comillas"
 
 echo "--------------------------------------"
 echo "-------------------------------------------------------"
