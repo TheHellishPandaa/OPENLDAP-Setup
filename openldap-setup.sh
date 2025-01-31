@@ -9,42 +9,6 @@ base_dn="dc=$(echo $domain | sed 's/\./,dc=/g')"
 txt_file="estructura_ldap.txt"
 ldif_file="estructura_ldap.ldif"
 
-echo "Creando archivo de estructura LDAP..."
-cat > $txt_file <<EOL
-dc=$domain
-  OU=EQUIPODIRECTIVO
-    GP=JefeEstudiosAdjunto
-  OU=PROFESORES
-    OU=DPTOINFORMATICA
-      OU=INFORMATICA
-      OU=SISTEMAS
-    OU=DPTOINGLES
-    OU=DPTOLENGUA
-    OU=DPTOMATEMATICAS
-    OU=DPTOFOL
-    OU=DPTOCIENCIAS
-      OU=CIENCIASFISICAS
-      OU=BIOLOGIA
-    OU=DPTOGEOGRAFIA
-    OU=DPTOTECNOLOGIA
-  OU=ADMINISTRACION
-  OU=SECRETARIO
-  OU=DPTOTÉCNICO
-  OU=ESO
-    OU=PRIMEROESO
-    OU=SEGUNDOESO
-    OU=TERCEROESO
-    OU=PRIMEROBCH
-    OU=SEGUNDOBCH
-  OU=FP
-    OU=DAW
-    OU=DAM
-    OU=SMR
-    OU=ASIR
-    OU=POC
-    OU=PED
-    OU=AF
-EOL
 
 echo "Convirtiendo a formato LDIF..."
 echo "dn: $base_dn" > $ldif_file
