@@ -1,6 +1,6 @@
 dc=jgalvez.ies
   OU=EQUIPODIRECTIVO
-    GP=JefeEstudiosAdjunto
+    OU=JefeEstudiosAdjunto
   OU=PROFESORES
     OU=DPTOINFORMATICA
       OU=INFORMATICA
